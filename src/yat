@@ -1,0 +1,65 @@
+#!/usr/bin/bash
+
+# options for trans
+SHOW_ALT='no'
+ORIGINAL_PHONETICS='no'
+SHOW_ORIGINAL='no'
+PROMPT_MSG='no'
+TARGET='en'
+
+#options for yad
+WIDTH=400
+HEIGHT=200
+Y_OFFSET=0
+X_OFFSET=0
+
+#options for themes
+BODY_BG='#1E1C31'
+BODY_FG='#E5C07B'
+BODY_FONT='15px roboto'
+WORD_BG='#1E1C31'
+WORD_FG='#E06C75'
+WORD_FONT='15px comfortaa'
+TRANS_BG='#1E1C31'
+TRANS_FG='#98C379'
+TRANS_FONT='15px comfortaa'
+LANG_BG='#1E1C31'
+LANG_FG='#61AFEF'
+LANG_FONT='15px comfortaa'
+
+
+
+if [ ! -z "$1" ];then
+  TEXT="$@"
+else
+  TEXT="$(xsel -o)"
+fi
+T_CMD="trans --show-alternatives $SHOW_ALT\
+  --show-original-phonetics $ORIGINAL_PHONETICS\
+  --show-original $SHOW_ORIGINAL\
+  --show-prompt-message $PROMPT_MSG\
+  --target $TARGET
+"
+
+TR_TXT=$($T_CMD "$TEXT" |
+  awk '/\[1m/ && !c++{sub(/\[1m/,"<trans>") sub(/\[22m/,"</trans>")} 1' |
+  awk '/\[4m/ && !c++{sub(/\[4m/,"<lang>") sub(/\[1m/,"") sub(/\[24m/,"") sub(/\[22m/,"</lang>") sub(/\[/,"") sub(/\]/,"")} 1' |
+  awk 'gsub(/\[1m/,"<word>") gsub(/\[22m/,"</word>") gsub(/\[22m/,"</word>") gsub("$","<br>")')
+
+awk -v b_bg="$BODY_BG" '{ sub("body_bg",b_bg, $0); print $0 }' template.html |
+  awk -v b_bg="$BODY_BG" '{ sub("body_bg",b_bg, $0); print $0 }' |
+  awk -v b_fg="$BODY_FG" '{ sub("body_fg",b_fg, $0); print $0 }' |
+  awk -v b_font="$BODY_FONT" '{ sub("body_font",b_font, $0); print $0 }' |
+  awk -v w_bg="$WORD_BG" '{ sub("word_bg",w_bg, $0); print $0 }' |
+  awk -v w_fg="$WORD_FG" '{ sub("word_fg",w_fg, $0); print $0 }' |
+  awk -v w_font="$WORD_FONT" '{ sub("word_font",w_font, $0); print $0 }' |
+  awk -v t_bg="$TRANS_BG" '{ sub("trans_bg",t_bg, $0); print $0 }' |
+  awk -v t_fg="$TRANS_FG" '{ sub("trans_fg",t_fg, $0); print $0 }' |
+  awk -v t_font="$TRANS_FONT" '{ sub("trans_font",t_font, $0); print $0 }' |
+  awk -v l_bg="$LANG_BG" '{ sub("lang_bg",l_bg, $0); print $0 }' |
+  awk -v l_fg="$LANG_FG" '{ sub("lang_fg",l_fg, $0); print $0 }' |
+  awk -v l_font="$LANG_BG" '{ sub("lang_font",l_font, $0); print $0 }' |
+  awk -v payload="$TR_TXT" '{ sub("landing",payload,$0); print $0}' > result.html 
+
+eval $(xdotool getmouselocation --shell)
+yad --html --uri=result.html --no-buttons --geometry=500x200+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET ))
