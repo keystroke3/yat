@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+while true;do sleep 0.5 && ./yat -b; done &> yatd.log

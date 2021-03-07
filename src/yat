@@ -13,7 +13,7 @@ HEIGHT=200
 Y_OFFSET=0
 X_OFFSET=0
 
-#options for themes
+#Theme
 BODY_BG='#1E1C31'
 BODY_FG='#E5C07B'
 BODY_FONT='15px roboto'
@@ -28,18 +28,44 @@ LANG_FG='#61AFEF'
 LANG_FONT='15px comfortaa'
 
 
+eval $(xdotool getmouselocation --shell)
+Y_CMD="yad --skip-taskbar\
+  --title="YAT"
+  --geometry="$WIDTH"x"$HEIGHT"+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET ))"
+
+clip_check(){
+  if [[ $(xsel -o) == "" ]] || [[ $(xsel -o) == " " ]] || [[ "$(xsel -o)" == "$(cat /tmp/yat.last)" ]];then
+    :
+  else
+    echo "$(xsel -o)" > /tmp/yat.last 
+    if $Y_CMD  --geometry=10x10+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET )) --button="Translate":0;then
+      TEXT="$(xsel -o)" || exit 1
+    else
+      exit 1
+    fi
+  fi
+}
 
 if [ ! -z "$1" ];then
-  TEXT="$@"
+  if [ "$1" == '-i' ];then
+    TEXT=$($Y_CMD --text-info --editable)
+  elif [ "$1" == '-b' ]; then
+    clip_check
+  else
+    TEXT="$@"
+  fi
 else
   TEXT="$(xsel -o)"
 fi
+
 T_CMD="trans --show-alternatives $SHOW_ALT\
   --show-original-phonetics $ORIGINAL_PHONETICS\
   --show-original $SHOW_ORIGINAL\
   --show-prompt-message $PROMPT_MSG\
   --target $TARGET
 "
+
+[[ -z $TEXT ]] && exit 1
 
 TR_TXT=$($T_CMD "$TEXT" |
   awk '/\[1m/ && !c++{sub(/\[1m/,"<trans>") sub(/\[22m/,"</trans>")} 1' |
@@ -61,5 +87,5 @@ awk -v b_bg="$BODY_BG" '{ sub("body_bg",b_bg, $0); print $0 }' template.html |
   awk -v l_font="$LANG_BG" '{ sub("lang_font",l_font, $0); print $0 }' |
   awk -v payload="$TR_TXT" '{ sub("landing",payload,$0); print $0}' > result.html 
 
-eval $(xdotool getmouselocation --shell)
-yad --html --uri=result.html --no-buttons --geometry=500x200+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET ))
+$Y_CMD --no-buttons --html --uri=result.html 
+echo "$TEXT" > /tmp/yat.last
