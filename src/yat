@@ -5,7 +5,8 @@ SHOW_ALT='no'
 ORIGINAL_PHONETICS='no'
 SHOW_ORIGINAL='no'
 PROMPT_MSG='no'
-TARGET='en'
+LEARNING='es'
+PRIMARY='en'
 
 #options for yad
 WIDTH=400
@@ -13,32 +14,37 @@ HEIGHT=200
 Y_OFFSET=0
 X_OFFSET=0
 
-#Theme
+#Colors
 BODY_BG='#1E1C31'
 BODY_FG='#E5C07B'
-BODY_FONT='15px roboto'
 WORD_BG='#1E1C31'
 WORD_FG='#E06C75'
-WORD_FONT='15px comfortaa'
 TRANS_BG='#1E1C31'
 TRANS_FG='#98C379'
-TRANS_FONT='15px comfortaa'
 LANG_BG='#1E1C31'
 LANG_FG='#61AFEF'
+
+#fonts
+BODY_FONT='15px roboto'
+WORD_FONT='15px comfortaa'
+TRANS_FONT='15px comfortaa'
 LANG_FONT='15px comfortaa'
 
+GEO="--geometry="$WIDTH"x"$HEIGHT""
 
-eval $(xdotool getmouselocation --shell)
+get_pos(){
+  eval $(xdotool getmouselocation --shell)
+  echo $(( $X+$X_OFFSET ))+$(( $Y+$Y_OFFSET ))
+}
+
 Y_CMD="yad --skip-taskbar\
-  --title="YAT"
-  --geometry="$WIDTH"x"$HEIGHT"+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET ))"
-
+  --title='YAT'"
 clip_check(){
   if [[ $(xsel -o) == "" ]] || [[ $(xsel -o) == " " ]] || [[ "$(xsel -o)" == "$(cat /tmp/yat.last)" ]];then
     :
   else
     echo "$(xsel -o)" > /tmp/yat.last 
-    if $Y_CMD  --geometry=10x10+$(( $X+$X_OFFSET ))+$(( $Y+$X_OFFSET )) --button="Translate":0;then
+    if $Y_CMD --geometry=10x10+$(get_pos) --button="Translate":0;then
       TEXT="$(xsel -o)" || exit 1
     else
       exit 1
@@ -48,7 +54,7 @@ clip_check(){
 
 if [ ! -z "$1" ];then
   if [ "$1" == '-i' ];then
-    TEXT=$($Y_CMD --text-info --editable)
+    TEXT=$($Y_CMD --width=$WIDTH --height=$HEIGHT --text-info --editable)
   elif [ "$1" == '-b' ]; then
     clip_check
   else
@@ -58,6 +64,21 @@ else
   TEXT="$(xsel -o)"
 fi
 
+if [ $LEARNING == '' ];then
+  TARGET=$PRIMARY
+else
+  TXT_LANG=$(trans --no-ansi -identify "$TEXT" | awk '/Code/ {print $2}')
+  echo "Detected $TXT_LANG"
+  if [ "$TXT_LANG" == $LEARNING ];then
+    TARGET="$PRIMARY"
+    echo "Target set to $TARGET"
+  elif [ "$TXT_LANG" == $PRIMARY ];then
+    TARGET="$LEARNING"
+  else
+    echo "cannot handle $TXT_LANG"
+  fi
+fi
+echo "$TARGET"
 T_CMD="trans --show-alternatives $SHOW_ALT\
   --show-original-phonetics $ORIGINAL_PHONETICS\
   --show-original $SHOW_ORIGINAL\
@@ -84,8 +105,8 @@ awk -v b_bg="$BODY_BG" '{ sub("body_bg",b_bg, $0); print $0 }' template.html |
   awk -v t_font="$TRANS_FONT" '{ sub("trans_font",t_font, $0); print $0 }' |
   awk -v l_bg="$LANG_BG" '{ sub("lang_bg",l_bg, $0); print $0 }' |
   awk -v l_fg="$LANG_FG" '{ sub("lang_fg",l_fg, $0); print $0 }' |
-  awk -v l_font="$LANG_BG" '{ sub("lang_font",l_font, $0); print $0 }' |
+  awk -v l_font="$LANG_FONT" '{ sub("lang_font",l_font, $0); print $0 }' |
   awk -v payload="$TR_TXT" '{ sub("landing",payload,$0); print $0}' > result.html 
 
-$Y_CMD --no-buttons --html --uri=result.html 
+$Y_CMD "$GEO"+$(get_pos)  --no-buttons --html --uri=result.html 
 echo "$TEXT" > /tmp/yat.last
