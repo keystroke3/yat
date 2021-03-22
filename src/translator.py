@@ -3,9 +3,9 @@ import uuid
 import json
 
 # Add your subscription key and endpoint
-subscription_key = "9cf8b66f2cd2402e98698ac3f7235826"
-endpoint = "https://api.cognitive.microsofttranslator.com"
-location = "northeurope"
+subscription_key = ""
+endpoint = ""
+location = ""
 headers = {
     'Ocp-Apim-Subscription-Key': subscription_key,
     'Ocp-Apim-Subscription-Region': location,
