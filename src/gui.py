@@ -5,23 +5,6 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("WebKit2", "4.0")
 from gi.repository import Gtk, Gdk, WebKit2, Gio
 
-try:
-    with open('../cache/state.p') as p:
-        state = pickle.load(p)
-except FileNotFoundError:
-    state = {
-        'langs': ['en','de']
-    }
-
-with open('../lib/names', 'rb') as n:
-    lang_names = pickle.load(n)
-
-with open('../lib/native_names', 'rb') as n:
-    lang_n_names = pickle.load(n)
-
-langs_codes = state['langs']
-selected_langs = []
-
 body_font = '15px roboto'
 body_bg = '#1E1C31'
 body_fg = '#E5C07B'
@@ -68,13 +51,28 @@ trans{{
 class MainWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="YAT")
+        try:
+            with open('../cache/state.p', 'rb') as p:
+                state = pickle.load(p)
+        except FileNotFoundError:
+            state = {
+                'fav_langs': ['en', 'es'],
+                'active_langs': ['en']
+            }
 
-        self.set_default_size(300, 250)
+        with open('../lib/names', 'rb') as n:
+            self.lang_names = pickle.load(n)
+
+        self.fav_langs = state['fav_langs']
+        self.active_langs = state['active_langs']
+
+        self.set_default_size(500, 250)
         self.set_resizable(False)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.main_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=0)
+        self.main_box.set_spacing(5)
         self.add(self.main_box)
         self.create_view()
 
@@ -92,8 +90,9 @@ class MainWindow(Gtk.Window):
 
         self.flowbox = Gtk.FlowBox()
         self.flowbox.set_valign(Gtk.Align.START)
+        self.flowbox.set_min_children_per_line(2)
         self.flowbox.set_max_children_per_line(3)
-        self.flowbox.set_min_children_per_line(3)
+        self.flowbox.set_homogeneous(False)
         self.flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
         self.langs_box = Gtk.Box()
 
@@ -105,32 +104,36 @@ class MainWindow(Gtk.Window):
         self.langs_box.pack_end(self.flowbox, False, True, 0)
 
         self.create_btns()
-        self.create_checks()
+        self.add_checkbox_btn()
         self.create_drop()
 
-    def create_checks(self, langs_codes=langs_codes):
-        btns = 0
-        v = 2
-        for code in langs_codes:
-            btns += 1
-            self.lang_btn_box = Gtk.Box(spacing=0)
-            lang = lang_names[code]
+    def add_checkbox_btn(self, lang_arg=''):
+        if lang_arg:
+            fav = lang_arg
+        else:
+            fav = self.fav_langs
+        for code in fav:
+            check_box = self.create_checkbox_btn(code)
+            self.flowbox.insert(check_box, -1)
+
+    def create_checkbox_btn(self, code):
+            lang_btn_box = Gtk.Box(spacing=0)
+            lang = self.lang_names[code]
             check_lang = Gtk.CheckButton(label=lang)
-            check_lang.set_active(False)
-            check_lang.connect("toggled", self.on_lang_checked, lang)
-            self.lang_btn_box.pack_start(check_lang, False, True, 0)
+            if code in self.active_langs:
+                check_lang.set_active(True)
+            check_lang.connect("toggled", self.on_lang_checked, code)
+            lang_btn_box.pack_start(check_lang, False, True, 0)
 
             remove_btn = Gtk.Button()
             icon = Gio.ThemedIcon(name="list-remove-symbolic")
             image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             remove_btn.add(image)
             remove_btn.connect("clicked", self.remove_fav,
-                               self.lang_btn_box, code)
-            self.lang_btn_box.pack_end(remove_btn, False, True, 5)
-            if btns > 3:
-                v += 1
-                btns = 1
-            self.flowbox.add(self.lang_btn_box)
+                               lang_btn_box, code)
+            lang_btn_box.pack_end(remove_btn, False, True, 5)
+
+            return lang_btn_box
 
     def create_btns(self, lbl1='Okay', lbl2='Cancel'):
         btns_box = Gtk.Box()
@@ -147,8 +150,8 @@ class MainWindow(Gtk.Window):
     def create_drop(self):
 
         combo_list = Gtk.ListStore(str, str)
-        for code in lang_names:
-            combo_list.append([code, lang_names[code]])
+        for code in self.lang_names:
+            combo_list.append([code, self.lang_names[code]])
 
         lang_combo = Gtk.ComboBox.new_with_model(combo_list)
         lang_combo.set_entry_text_column(1)
@@ -170,6 +173,14 @@ class MainWindow(Gtk.Window):
         drop_btn_box.pack_start(lang_combo, False, False, 0)
 
     def on_cancel_clicked(self, cancel_btn):
+        state = {
+            'active_langs': self.active_langs,
+            'fav_langs': self.fav_langs,
+        }
+        print(state)
+        with open('../cache/state.p', 'wb') as cache:
+            pickle.dump(state, cache)
+
         print("Quitting")
         Gtk.main_quit()
 
@@ -184,23 +195,23 @@ class MainWindow(Gtk.Window):
 
     def on_lang_checked(self, widget, language):
         if widget.get_active():
-            selected_langs.append(language)
+            self.active_langs.append(language)
             print(f'{language} checked')
         else:
-            selected_langs.remove(language)
+            self.active_langs.remove(language)
             print(f'{language} unchecked')
 
     def on_lang_combo_changed(self, combo):
         tree_iter = combo.get_active_iter()
         if tree_iter is not None:
             model = combo.get_model()
-            lang_code, lang_name = model[tree_iter][:2]
-            print(f"{(lang_code, lang_name)}")
+            lang_code = model[tree_iter][0]
             self.combo_selected = lang_code
 
     def remove_fav(self, remove_btn, lang_btn, lang):
-        langs_codes.remove(lang)
+        self.fav_langs.remove(lang)
         self.flowbox.remove(lang_btn)
+        print(lang_btn)
 
     def add_fav(self, add_btn):
         try:
@@ -208,9 +219,11 @@ class MainWindow(Gtk.Window):
         except AttributeError:
             print('no language selected')
             return 1
-        langs_codes.append(l)
-        print(langs_codes)
-        self.create_checks([l])
+        if l in self.fav_langs:
+            return (1, f'{self.lang_names[l]} already in favs')
+        self.fav_langs.append(l)
+        print(l)
+        self.create_checkbox_btn([l])
         self.show_all()
 
 
