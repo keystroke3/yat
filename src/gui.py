@@ -10,7 +10,7 @@ try:
         state = pickle.load(p)
 except FileNotFoundError:
     state = {
-        'langs': ['it', 'es', 'ru', 'ja']
+        'langs': ['en','de']
     }
 
 with open('../lib/names', 'rb') as n:
@@ -82,6 +82,7 @@ class MainWindow(Gtk.Window):
         scrolledwindow = Gtk.ScrolledWindow()
         scrolledwindow.set_hexpand(True)
         scrolledwindow.set_vexpand(True)
+
         self.main_box.pack_start(scrolledwindow, True, True, 0)
         self.textview = Gtk.TextView()
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD)
@@ -89,17 +90,25 @@ class MainWindow(Gtk.Window):
         self.textview.set_indent(5)
         self.textview.is_focus()
 
-        self.grid = Gtk.Grid()
-        self.grid_box = Gtk.Box()
-        self.grid.set_column_spacing(0)
-        self.grid.set_row_spacing(3)
-        self.main_box.pack_start(self.grid_box, False, True, 0)
-        self.grid_box.pack_end(self.grid, False, True, 0)
+        self.flowbox = Gtk.FlowBox()
+        self.flowbox.set_valign(Gtk.Align.START)
+        self.flowbox.set_max_children_per_line(3)
+        self.flowbox.set_min_children_per_line(3)
+        self.flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        self.langs_box = Gtk.Box()
+
+        lang_drop_lbl = Gtk.Label(label='Select Language:', xalign=0)
+        self.lang_select_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.langs_box.pack_start(self.lang_select_box, False, False, 0)
+        self.main_box.pack_start(lang_drop_lbl, False, True, 0)
+        self.main_box.pack_start(self.langs_box, False, True, 0)
+        self.langs_box.pack_end(self.flowbox, False, True, 0)
+
         self.create_btns()
         self.create_checks()
         self.create_drop()
 
-    def create_checks(self):
+    def create_checks(self, langs_codes=langs_codes):
         btns = 0
         v = 2
         for code in langs_codes:
@@ -115,12 +124,13 @@ class MainWindow(Gtk.Window):
             icon = Gio.ThemedIcon(name="list-remove-symbolic")
             image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             remove_btn.add(image)
-            remove_btn.connect("clicked", self.remove_lang, self.lang_btn_box, code)
+            remove_btn.connect("clicked", self.remove_fav,
+                               self.lang_btn_box, code)
             self.lang_btn_box.pack_end(remove_btn, False, True, 5)
             if btns > 3:
                 v += 1
                 btns = 1
-            self.grid.attach(self.lang_btn_box, btns-1, v, 1, 1)
+            self.flowbox.add(self.lang_btn_box)
 
     def create_btns(self, lbl1='Okay', lbl2='Cancel'):
         btns_box = Gtk.Box()
@@ -135,7 +145,7 @@ class MainWindow(Gtk.Window):
         btns_box.pack_end(cancel_btn, False, False, 1)
 
     def create_drop(self):
-        
+
         combo_list = Gtk.ListStore(str, str)
         for code in lang_names:
             combo_list.append([code, lang_names[code]])
@@ -146,22 +156,31 @@ class MainWindow(Gtk.Window):
         renderer_text = Gtk.CellRendererText()
         lang_combo.pack_start(renderer_text, True)
         lang_combo.add_attribute(renderer_text, "text", 1)
-        print('create_drop')
         lang_combo.connect("changed", self.on_lang_combo_changed)
-        self.grid_box.pack_start(lang_combo, False, False, 0)
+
+        fav_btn = Gtk.Button()
+        icon = Gio.ThemedIcon(name="emblem-favorite-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        fav_btn.add(image)
+        fav_btn.connect("clicked", self.add_fav)
+
+        drop_btn_box = Gtk.Box()
+        self.lang_select_box.pack_start(drop_btn_box, False, True, 3)
+        drop_btn_box.pack_start(fav_btn, False, False, 0)
+        drop_btn_box.pack_start(lang_combo, False, False, 0)
 
     def on_cancel_clicked(self, cancel_btn):
         print("Quitting")
         Gtk.main_quit()
 
     def on_okay_clicked(self, okay_btn):
-        self.buffer = self.textview.get_buffer()
-        begining, end = self.buffer.get_bounds()
-        payload = self.buffer.get_text(begining, end, False)
-        output = AnswerWindow(payload)
-        output.connect("destroy", self.on_cancel_clicked)
-        output.show_all()
-        self.hide()
+        # self.buffer = self.textview.get_buffer()
+        # begining, end = self.buffer.get_bounds()
+        # payload = self.buffer.get_text(begining, end, False)
+        # output = AnswerWindow(payload)
+        # output.connect("destroy", self.on_cancel_clicked)
+        # output.show_all()
+        # self.hide()
 
     def on_lang_checked(self, widget, language):
         if widget.get_active():
@@ -170,18 +189,28 @@ class MainWindow(Gtk.Window):
         else:
             selected_langs.remove(language)
             print(f'{language} unchecked')
-    
+
     def on_lang_combo_changed(self, combo):
         tree_iter = combo.get_active_iter()
         if tree_iter is not None:
             model = combo.get_model()
             lang_code, lang_name = model[tree_iter][:2]
             print(f"{(lang_code, lang_name)}")
-        
-    def remove_lang(self, remove_btn, lang_btn, lang):
-        langs_codes.remove(lang)
-        self.grid.remove(lang_btn)
+            self.combo_selected = lang_code
 
+    def remove_fav(self, remove_btn, lang_btn, lang):
+        langs_codes.remove(lang)
+        self.flowbox.remove(lang_btn)
+
+    def add_fav(self, add_btn):
+        try:
+            l = self.combo_selected
+        except AttributeError:
+            print('no language selected')
+            return 1
+        langs_codes.append(l)
+        print(langs_codes)
+        self.create_checks([l])
 
 
 class AnswerWindow(MainWindow):
