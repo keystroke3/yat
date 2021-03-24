@@ -174,13 +174,13 @@ class MainWindow(Gtk.Window):
         Gtk.main_quit()
 
     def on_okay_clicked(self, okay_btn):
-        # self.buffer = self.textview.get_buffer()
-        # begining, end = self.buffer.get_bounds()
-        # payload = self.buffer.get_text(begining, end, False)
-        # output = AnswerWindow(payload)
-        # output.connect("destroy", self.on_cancel_clicked)
-        # output.show_all()
-        # self.hide()
+        self.buffer = self.textview.get_buffer()
+        begining, end = self.buffer.get_bounds()
+        payload = self.buffer.get_text(begining, end, False)
+        output = AnswerWindow(payload)
+        output.connect("destroy", self.on_cancel_clicked)
+        output.show_all()
+        self.hide()
 
     def on_lang_checked(self, widget, language):
         if widget.get_active():
@@ -211,6 +211,7 @@ class MainWindow(Gtk.Window):
         langs_codes.append(l)
         print(langs_codes)
         self.create_checks([l])
+        self.show_all()
 
 
 class AnswerWindow(MainWindow):
