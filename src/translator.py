@@ -2,10 +2,17 @@ import requests
 import uuid
 import json
 
-# Add your subscription key and endpoint
-subscription_key = ""
-endpoint = ""
-location = ""
+try:
+    with open('env.json', 'r') as f:
+        creds = json.load(f)
+except FileNotFoundError:
+    print('No credentials found')
+    exit(1)
+
+
+subscription_key = creds['key']
+endpoint = creds['endpoint']
+location = creds['location']
 headers = {
     'Ocp-Apim-Subscription-Key': subscription_key,
     'Ocp-Apim-Subscription-Region': location,
