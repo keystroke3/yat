@@ -1,0 +1,56 @@
+.body{
+            font: 15px roboto;
+            background-color: #1E1C31;
+            color: #E5C07B;
+            font: 15px roboto;
+            overflow: scroll;
+            }
+.word{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #E06C75;
+            font: 15px comfortaa;
+            
+            }
+.lang{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #61AFEF;
+            font: 15px comfortaa;
+            
+            }
+.query{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 15px comfortaa;
+            
+            }
+.definition{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 15px comfortaa;
+            
+            }
+.translation{
+            font: 16px comfortaa;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 16px comfortaa;
+            
+            }
+.synonyms{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 15px comfortaa;
+            
+            }
+.has_example{
+            font: 15px comfortaa;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 15px comfortaa;
+            text-decoration: underline;
+            }
