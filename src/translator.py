@@ -25,17 +25,25 @@ def translator(text, from_lang, to_lang, mode='translate'):
     if not text:
         return 1, 'Nothing to translate'
     if not to_lang and mode != 'detect':
-        return 1, 'Destination Language empty'
+        return 1, 'Target Language cannot be empty'
 
+    if type(to_lang) == str:
+        if ' ' in to_lang or ',' in to_lang:
+            to_lang = [to_lang.split(i) for i in (',', ' ') if i in to_lang]
+        else:
+            to_lang = [to_lang]
+    
     params = {
         'api-version': '3.0',
-        'toScript': 'latn',
         'from': from_lang,
-        'to': to_lang
+        'to': to_lang[0]
     }
     if mode == 'translate' or mode == '':
         path = '/translate'
     elif mode == 'dict':
+        if not from_lang or not to_lang:
+            print('You need to enter both source and target language for dictionary, en being one of them')
+            exit(1)
         path = '/dictionary/lookup'
     elif mode == 'detect':
         path = '/detect'
