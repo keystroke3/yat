@@ -1,52 +1,10 @@
 import gi
 import pickle
 import json
+from parse import parse
 gi.require_version("Gtk", "3.0")
 gi.require_version("WebKit2", "4.0")
 from gi.repository import Gtk, Gdk, WebKit2, Gio
-
-body_font = '15px roboto'
-body_bg = '#1E1C31'
-body_fg = '#E5C07B'
-
-word_fg = '#E06C75'
-word_bg = '#1E1C31'
-word_font = '15px comfortaa'
-
-lang_fg = '#61AFEF'
-lang_bg = '#1E1C31'
-lang_font = '15px comfortaa'
-
-okay_fg = '#98C379'
-okay_bg = '#1E1C31'
-okay_font = '15px comfortaa'
-
-style = f"""
-<style>
-body{{
-    font: {body_font};
-    background-color: {body_bg};
-    color: {body_fg};
-    overflow: scroll;
-}}
-word{{
-    color: {word_fg};
-    background-color: {word_bg};
-    font: {word_font};
-}}
-lang{{
-    color: {lang_fg};
-    background-color: {lang_bg};
-    font: {lang_font};
-}}
-trans{{
-    color: {okay_fg};
-    background-color: {okay_bg};
-    font: {okay_font};
-}}
-</style>
-"""
-
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -60,11 +18,12 @@ class MainWindow(Gtk.Window):
                 'active_langs': ['en']
             }
 
-        with open('../lib/names', 'rb') as n:
+        with open('../lib/language_names.p', 'rb') as n:
             self.lang_names = pickle.load(n)
 
         self.fav_langs = state['fav_langs']
         self.active_langs = state['active_langs']
+        print(self.active_langs)
 
         self.set_default_size(500, 250)
         self.set_resizable(False)
@@ -130,7 +89,7 @@ class MainWindow(Gtk.Window):
             image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
             remove_btn.add(image)
             remove_btn.connect("clicked", self.remove_fav,
-                               lang_btn_box, code)
+                               lang_btn_box, code, check_lang.get_active())
             lang_btn_box.pack_end(remove_btn, False, True, 5)
 
             return lang_btn_box
@@ -172,15 +131,15 @@ class MainWindow(Gtk.Window):
         drop_btn_box.pack_start(fav_btn, False, False, 0)
         drop_btn_box.pack_start(lang_combo, False, False, 0)
 
-    def on_cancel_clicked(self, cancel_btn):
+    def save_state(self):
         state = {
             'active_langs': self.active_langs,
             'fav_langs': self.fav_langs,
         }
-        print(state)
         with open('../cache/state.p', 'wb') as cache:
             pickle.dump(state, cache)
 
+    def on_cancel_clicked(self, cancel_btn):
         print("Quitting")
         Gtk.main_quit()
 
@@ -196,9 +155,11 @@ class MainWindow(Gtk.Window):
     def on_lang_checked(self, widget, language):
         if widget.get_active():
             self.active_langs.append(language)
+            self.save_state()
             print(f'{language} checked')
         else:
             self.active_langs.remove(language)
+            self.save_state()
             print(f'{language} unchecked')
 
     def on_lang_combo_changed(self, combo):
@@ -208,10 +169,12 @@ class MainWindow(Gtk.Window):
             lang_code = model[tree_iter][0]
             self.combo_selected = lang_code
 
-    def remove_fav(self, remove_btn, lang_btn, lang):
+    def remove_fav(self, remove_btn, lang_btn, lang, btn_is_active):
         self.fav_langs.remove(lang)
+        if btn_is_active:
+            self.active_langs.remove(lang)
         self.flowbox.remove(lang_btn)
-        print(lang_btn)
+        self.save_state()
 
     def add_fav(self, add_btn):
         try:
@@ -222,9 +185,9 @@ class MainWindow(Gtk.Window):
         if l in self.fav_langs:
             return (1, f'{self.lang_names[l]} already in favs')
         self.fav_langs.append(l)
-        print(l)
-        self.create_checkbox_btn([l])
+        self.add_checkbox_btn([l])
         self.show_all()
+        self.save_state()
 
 
 class AnswerWindow(MainWindow):
@@ -233,12 +196,10 @@ class AnswerWindow(MainWindow):
         super().__init__()
 
     def create_view(self):
-        html = f"""
-        <!DOCTYPE html><html><head>{style}</head><body>{self.payload}</body>
-        """
         webview = WebKit2.WebView()
         self.main_box.pack_start(webview, True, True, 5)
         self.create_btns('Go Back', 'Exit')
+        html = parse(self.payload)
         webview.load_html(html)
         webview.show()
 
@@ -248,10 +209,3 @@ class AnswerWindow(MainWindow):
         back.connect("destroy", self.on_cancel_clicked)
         self.hide()
 
-
-win = MainWindow()
-win.connect("destroy", win.on_cancel_clicked)
-win.show_all()
-
-
-Gtk.main()
