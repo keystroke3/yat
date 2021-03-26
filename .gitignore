@@ -7,3 +7,5 @@
 *dictionary.py
 *webkitview*
 *.venv*
+*cache*
+!lib/*.css
