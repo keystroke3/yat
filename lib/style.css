@@ -6,10 +6,10 @@
             overflow: scroll;
             }
 .word{
-            font: 15px comfortaa;
+            font: 20px comfortaa;
             background-color: #1E1C31;
-            color: #E06C75;
-            font: 15px comfortaa;
+            color: #98C379;
+            font: 20px comfortaa;
             
             }
 .lang{
@@ -29,7 +29,7 @@
 .definition{
             font: 15px comfortaa;
             background-color: #1E1C31;
-            color: #98C379;
+            color: #E5C07B;
             font: 15px comfortaa;
             
             }
@@ -41,16 +41,28 @@
             
             }
 .synonyms{
-            font: 15px comfortaa;
+            font: 15px roboto;
             background-color: #1E1C31;
             color: #98C379;
-            font: 15px comfortaa;
+            font: 15px roboto;
             
             }
 .has_example{
-            font: 15px comfortaa;
-            background-color: #1E1C31;
-            color: #98C379;
-            font: 15px comfortaa;
             text-decoration: underline;
-            }
+            cursor: pointer;
+        }
+.variant{
+            display: inline;
+        }
+.def_box{
+            border: 3px;
+            border-style: dotted;
+            border-radius: 10px;
+            border-color: '#E5C07B';
+            padding: 10px;
+            margin: 5px;
+            width: 20rem;
+            height: max-content;
+        }
+
+    

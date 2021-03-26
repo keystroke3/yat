@@ -1,7 +1,7 @@
 import pickle
 import json
 import dominate
-from dominate.tags import *
+from dominate.tags import body, sup, ol, ul, li, link, div
 
 theme = ''
 
@@ -11,9 +11,9 @@ def create_theme():
         'body_bg': '#1E1C31',
         'body_fg': '#E5C07B',
         'body_font': '15px roboto',
-        'word_fg': '#E06C75',
+        'word_fg': '#98C379',
         'word_bg': '#1E1C31',
-        'word_font': '15px comfortaa',
+        'word_font': '20px comfortaa',
         'lang_fg': '#61AFEF',
         'lang_bg': '#1E1C31',
         'lang_font': '15px comfortaa',
@@ -23,11 +23,8 @@ def create_theme():
         'query_font': '15px comfortaa',
         'synonyms_fg': '#98C379',
         'synonyms_bg': '#1E1C31',
-        'synonyms_font': '15px comfortaa',
-        'has_example_fg': '#98C379',
-        'has_example_bg': '#1E1C31',
-        'has_example_font': '15px comfortaa',
-        'definition_fg': '#98C379',
+        'synonyms_font': '15px roboto',
+        'definition_fg': '#E5C07B',
         'definition_bg': '#1E1C31',
         'definition_font': '15px comfortaa',
         'translation_fg': '#98C379',
@@ -48,11 +45,9 @@ def create_css():
         theme = create_theme()
 
     classes = ('body', 'word', 'lang', 'query', 'definition',
-               'translation', 'synonyms', 'has_example')
+               'translation', 'synonyms',)
 
     def special_check(name):
-        if name == 'has_example':
-            return "text-decoration: underline;"
         if name == 'body':
             return "overflow: scroll;"
         return ''
@@ -66,11 +61,28 @@ def create_css():
             font: {theme[f"{cls_name}_font"]};
             {special_check(cls_name)}
             }}\n"""
-        css = css+class_style
+        css +=class_style
+    exta_css=f""".has_example{{
+            text-decoration: underline;
+            cursor: pointer;
+        }}\n.variant{{
+            display: inline;
+        }}\n.def_box{{
+            border: 3px;
+            border-style: dotted;
+            border-radius: 10px;
+            border-color: '#E5C07B';
+            padding: 10px;
+            margin: 5px;
+            width: 20rem;
+            height: max-content;
+        }}\n
+    """
+    css += exta_css
+    
 
     with open('../lib/style.css', 'w') as f:
         f.write(css)
-
 
 def parse_dict(p):
     query = p['displaySource']
@@ -101,18 +113,49 @@ def parse_translation():
     return ('t', source, translations)
 
 
-def auto_html():
-    with open('run.dict.json', 'r') as r:
-        payload = json.load(r)[0]
+def parse(payload=''):
+    if not payload:
+        with open('run.dict.json', 'r') as r:
+            payload = json.load(r)[0]
+        
     try:
         with open('../lib/style.css'):
             pass
     except FileNotFoundError:
         create_css()
-        auto_html()
+        parse()
     query_type, query, trans = parse_dict(payload)
+
+    doc = dominate.document(title=f'YAT {query}')
+    with doc.head:
+        link(rel='stylesheet', href='../lib/style.css')
+    with doc:
+        container = body(cls='body').add(div(cls='def_box'))
+
+    word = container.add(div(query, cls='word'))
+    language = container.add(div('en - es', cls='lang'))
+
+    def add_syn(synonyms, vars):
+        for syn in vars:
+            if not syn[1]:
+                synonyms.add(li(syn[0], cls='synonyms'))
+            else:
+                syn_word = synonyms.add(li(f'{syn[0]} ',
+                cls='synonyms has_example'))
+                syn_eg_no = syn_word.add(sup(syn[1]))
+                
+
+    for w in trans:
+        def_box = container.add(div()).add(ul())
+        defin = trans[w]
+        def_box.add(li(f'{w} ({defin["word_type"]})'.lower(),
+                        cls='definition'))
+        synonyms = def_box.add(ol())
+        add_syn(synonyms, defin['variants'])
+    
+    return doc
 
 
 
 if __name__ == '__main__':
-    auto_html()
+    print(parse())
