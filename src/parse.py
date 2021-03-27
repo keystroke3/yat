@@ -1,9 +1,13 @@
 import pickle
 import json
 import dominate
-from dominate.tags import body, sup, ol, ul, li, link, div
+from dominate.util import raw
+from dominate.tags import body, sup, ol, ul, li, link, div, p
 
 theme = ''
+
+with open('../lib/language_names.p', 'rb') as l:
+    langs = pickle.load(l)
 
 
 def create_theme():
@@ -29,7 +33,10 @@ def create_theme():
         'definition_font': '15px comfortaa',
         'translation_fg': '#98C379',
         'translation_bg': '#1E1C31',
-        'translation_font': '16px comfortaa'
+        'translation_font': '15px roboto',
+        'lit_fg': '#98C379',
+        'lit_bg': '#1E1C31',
+        'lit_font': '15px roboto',
     }
 
     with open('../lib/theme.p', 'wb') as t:
@@ -45,7 +52,7 @@ def create_css():
         theme = create_theme()
 
     classes = ('body', 'word', 'lang', 'query', 'definition',
-               'translation', 'synonyms',)
+               'translation', 'lit', 'synonyms',)
 
     def special_check(name):
         if name == 'body':
@@ -61,12 +68,14 @@ def create_css():
             font: {theme[f"{cls_name}_font"]};
             {special_check(cls_name)}
             }}\n"""
-        css +=class_style
-    exta_css=f""".has_example{{
+        css += class_style
+    exta_css = f""".has_example{{
             text-decoration: underline;
             cursor: pointer;
         }}\n.variant{{
             display: inline;
+        }}\n.indent{{
+            margin-left: 5%;
         }}\n.def_box{{
             border: 3px;
             border-style: dotted;
@@ -79,10 +88,10 @@ def create_css():
         }}\n
     """
     css += exta_css
-    
 
     with open('../lib/style.css', 'w') as f:
         f.write(css)
+
 
 def parse_dict(p):
     query = p['displaySource']
@@ -96,66 +105,69 @@ def parse_dict(p):
         definition = {'word_type': word_type,
                       'variants': synonyms}
         definitions[trln] = definition
-    return ('d', query, definitions)
+    return (query, definitions)
 
 
-def parse_translation():
-    with open('tran.out.json', 'r') as f:
-        t = json.load(f)[2][0]
-    try:
-        source = t['detectedLanguage']
-    except KeyError:
-        source = 'empty'
+def dict_html(container, query, dict_, source, target):
+    container.add(div(query, cls='word'))
+    container.add(div(raw(
+        f'{langs[source]} -> {langs[target]}'), cls='lang'))
+    for w in dict_:
+        def_box = container.add(div()).add(ul())
+        defin = dict_[w]
+        def_box.add(li(f'{w} ({defin["word_type"]})'.lower(),
+                    cls='definition'))
+        synonyms = def_box.add(ol())
+        for syn in defin['variants']:
+            if not syn[1]:
+                synonyms.add(li(syn[0], cls='synonyms'))
+            else:
+                syn_word = synonyms.add(li(f'{syn[0]} ',
+                                        cls='synonyms has_example'))
+                syn_word.add(sup(syn[1]))
 
-    translations = {trans['to']: trans['text']
-                    for trans in t['translations']}
 
-    return ('t', source, translations)
+def trans_html(container, payload, source):
+    container.add(div(f'{langs[source]} detected', cls='lang'))
+    trlns_box = container.add(div()).add(ul(cls='definition'))
+    translations = payload['translations']
+    for t in translations:
+        trlns_box.add(ul())
+        trlns_box.add(li(langs[t['to']]))
+        trln_text = trlns_box.add(div(cls='indent'))
+        trln_text.add(div(t['text'], cls='translation'))
+        try:
+            lit = t['transliteration']
+            trln_text.add(p(f"({lit['text']})", cls='lit'))
+        except KeyError:
+            continue
 
 
-def parse(payload=''):
-    if not payload:
-        with open('run.dict.json', 'r') as r:
-            payload = json.load(r)[0]
-        
+def parse(target='', source='', payload=''):
     try:
         with open('../lib/style.css'):
             pass
     except FileNotFoundError:
         create_css()
-        parse()
-    query_type, query, trans = parse_dict(payload)
+        parse(target, source, payload)
 
-    doc = dominate.document(title=f'YAT {query}')
+    doc = dominate.document(title=f'YAT')
     with doc.head:
         link(rel='stylesheet', href='../lib/style.css')
     with doc:
         container = body(cls='body').add(div(cls='def_box'))
 
-    word = container.add(div(query, cls='word'))
-    language = container.add(div('en - es', cls='lang'))
-
-    def add_syn(synonyms, vars):
-        for syn in vars:
-            if not syn[1]:
-                synonyms.add(li(syn[0], cls='synonyms'))
-            else:
-                syn_word = synonyms.add(li(f'{syn[0]} ',
-                cls='synonyms has_example'))
-                syn_eg_no = syn_word.add(sup(syn[1]))
-                
-
-    for w in trans:
-        def_box = container.add(div()).add(ul())
-        defin = trans[w]
-        def_box.add(li(f'{w} ({defin["word_type"]})'.lower(),
-                        cls='definition'))
-        synonyms = def_box.add(ol())
-        add_syn(synonyms, defin['variants'])
-    
-    return doc
-
+    try:
+        payload['translations'][0]['backTranslations']
+        query, dict_ = parse_dict(payload)
+        dict_html(container, query, dict_, source, target)
+        return doc
+    except KeyError:
+        trans_html(container, payload, source)
+        return doc
 
 
 if __name__ == '__main__':
-    print(parse())
+    with open('run.dict.json', 'r') as r:
+        payload = json.load(r)[0]
+    print(parse(payload=payload, source='en', target='es'))
