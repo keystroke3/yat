@@ -34,11 +34,17 @@
             
             }
 .translation{
-            font: 16px comfortaa;
+            font: 15px roboto;
             background-color: #1E1C31;
             color: #98C379;
-            font: 16px comfortaa;
-            
+            font: 15px roboto;
+            }
+.lit{
+            font: 15px roboto;
+            background-color: #1E1C31;
+            color: #98C379;
+            font: 15px roboto;
+            font-style: italic;
             }
 .synonyms{
             font: 15px roboto;
@@ -64,5 +70,8 @@
             width: 20rem;
             height: max-content;
         }
+.indent{
+    margin-left: 5%;
+}
 
     
