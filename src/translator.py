@@ -36,6 +36,7 @@ def translator(text, from_lang, to_lang, mode='translate'):
     params = {
         'api-version': '3.0',
         'from': from_lang,
+        'toScript': ['latn' for i in to_lang[0]],
         'to': to_lang[0]
     }
     if mode == 'translate' or mode == '':
