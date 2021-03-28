@@ -1,7 +1,6 @@
 import requests
 import uuid
 import json
-
 try:
     with open('env.json', 'r') as f:
         creds = json.load(f)
@@ -21,37 +20,48 @@ headers = {
 }
 
 
-def translator(text, from_lang, to_lang, mode='translate'):
+def translate(text, from_lang, to_lang):
     if not text:
         return 1, 'Nothing to translate'
-    if not to_lang and mode != 'detect':
+    if not to_lang: 
         return 1, 'Target Language cannot be empty'
 
     if type(to_lang) == str:
         if ' ' in to_lang or ',' in to_lang:
-            to_lang = [to_lang.split(i) for i in (',', ' ') if i in to_lang]
+            to_lang = [to_lang.split(i) for i in (',', ' ') if i in to_lang][0]
         else:
-            to_lang = [to_lang]
-    
+            to_lang = (to_lang)
+
+    if len(to_lang) == 1:
+        toScript = 'latn'
+    else:
+        toScript = ['latn' for i in to_lang[0]]
+        
     params = {
         'api-version': '3.0',
         'from': from_lang,
-        'toScript': ['latn' for i in to_lang[0]],
-        'to': to_lang[0]
-    }
+        'toScript': toScript,
+        'to': to_lang
+    }   
+
+    if not from_lang\
+        and ' ' not in text.strip():
+        from_lang = api(text, 'detect')[0]['language']
+        params['from'] = from_lang
+        return 0, api(text, 'dict', params)
+    else:
+        return 0, api(text, 'translate', params)
+
+def api(text, mode, params={}):
     if mode == 'translate' or mode == '':
         path = '/translate'
     elif mode == 'dict':
-        if not from_lang or not to_lang:
-            print('You need to enter both source and target language for dictionary, en being one of them')
-            exit(1)
         path = '/dictionary/lookup'
     elif mode == 'detect':
         path = '/detect'
         params = {
             'api-version': '3.0'
         }
-
     constructed_url = endpoint + path
     body = [{
         'text': str(text)
@@ -59,15 +69,11 @@ def translator(text, from_lang, to_lang, mode='translate'):
     request = requests.post(
         constructed_url, params=params, headers=headers, json=body)
     response = request.json()
-
-    ans = (json.dumps(response, sort_keys=True,
-                      ensure_ascii=False, indent=4, separators=(',', ': ')))
-    return 0, ans
+    return response
 
 
 if __name__ == '__main__':
-    data = translator(
-        mode=input('mode: '),
+    data = translate(
         text=input('Text: '),
         to_lang=input('to: '),
         from_lang=input('from: '),
