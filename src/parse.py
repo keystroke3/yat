@@ -1,6 +1,8 @@
 import pickle
 import json
 import dominate
+import argparse
+from translator import translate
 from dominate.util import raw
 from dominate.tags import body, sup, ol, ul, li, link, div, p
 
@@ -93,7 +95,8 @@ def create_css():
         f.write(css)
 
 
-def parse_dict(p):
+def parse_dict(payload):
+    p=payload[0]
     query = p['displaySource']
     definitions = {}
     for word in p['translations']:
@@ -130,8 +133,7 @@ def dict_html(container, query, dict_, source, target):
 def trans_html(container, payload, source):
     container.add(div(f'{langs[source]} detected', cls='lang'))
     trlns_box = container.add(div()).add(ul(cls='definition'))
-    translations = payload['translations']
-    for t in translations:
+    for t in payload:
         trlns_box.add(ul())
         trlns_box.add(li(langs[t['to']]))
         trln_text = trlns_box.add(div(cls='indent'))
@@ -156,18 +158,39 @@ def parse(target='', source='', payload=''):
         link(rel='stylesheet', href='../lib/style.css')
     with doc:
         container = body(cls='body').add(div(cls='def_box'))
-
     try:
-        payload['translations'][0]['backTranslations']
+        payload[0]['translations'][0]['backTranslations']
         query, dict_ = parse_dict(payload)
         dict_html(container, query, dict_, source, target)
         return doc
-    except KeyError:
+    except (KeyError,KeyError):
         trans_html(container, payload, source)
         return doc
 
 
 if __name__ == '__main__':
-    with open('run.dict.json', 'r') as r:
-        payload = json.load(r)[0]
-    print(parse(payload=payload, source='en', target='es'))
+    cli_parser = argparse.ArgumentParser()
+    cli_parser.add_argument("-t", "--text", metavar="'text'",
+                            help="Text to translate")
+    cli_parser.add_argument("-T", "--target", metavar="'language'",
+                            help="Target language to translate to")
+    cli_parser.add_argument("-s", "--source", default='', metavar="'language'",
+                            help="Source language of the text")
+    args = cli_parser.parse_args()
+    if not args.text:
+        print('Nothing to translate')
+        exit(1)
+    if not args.target:
+        exit(1)
+        print('Target language not set')
+    response = translate(text=args.text,
+                        to_lang=args.target,
+                        from_lang=args.source)
+    payload = response[1]
+    if not source:
+        source = response[0]
+    else:
+        source = args.source
+    print(parse(target=args.target,
+                source=source,
+                payload=payload))

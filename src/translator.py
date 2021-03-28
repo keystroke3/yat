@@ -1,13 +1,13 @@
 import requests
 import uuid
 import json
+import argparse
 try:
     with open('env.json', 'r') as f:
         creds = json.load(f)
 except FileNotFoundError:
     print('No credentials found')
     exit(1)
-
 
 subscription_key = creds['key']
 endpoint = creds['endpoint']
@@ -20,11 +20,11 @@ headers = {
 }
 
 
-def translate(text, from_lang, to_lang):
+def translate(text, to_lang, from_lang):
     if not text:
-        return 1, 'Nothing to translate'
+        return 'Nothing to translate'
     if not to_lang: 
-        return 1, 'Target Language cannot be empty'
+        return 'Target Language cannot be empty'
 
     if type(to_lang) == str:
         if ' ' in to_lang or ',' in to_lang:
@@ -48,9 +48,12 @@ def translate(text, from_lang, to_lang):
         and ' ' not in text.strip():
         from_lang = api(text, 'detect')[0]['language']
         params['from'] = from_lang
-        return 0, api(text, 'dict', params)
+        return from_lang, api(text, 'dict', params)
     else:
-        return 0, api(text, 'translate', params)
+        r = api(text, 'translate', params)[0]
+        language = r['detectedLanguage']['language']
+        translations = r['translations']
+        return language, translations
 
 def api(text, mode, params={}):
     if mode == 'translate' or mode == '':
@@ -73,9 +76,22 @@ def api(text, mode, params={}):
 
 
 if __name__ == '__main__':
-    data = translate(
-        text=input('Text: '),
-        to_lang=input('to: '),
-        from_lang=input('from: '),
-    )
-    print(data[1])
+    cli_parser = argparse.ArgumentParser()
+    cli_parser.add_argument("-t", "--text", metavar="'text'",
+                        help="Text to translate")
+    cli_parser.add_argument("-T", "--target", metavar="'language'",
+                        help="Target language to translate to")
+    cli_parser.add_argument("-s", "--source", default='', metavar="'language'",
+                        help="Source language of the text")
+    args = cli_parser.parse_args()
+    if not args.text:
+        print('Nothing to translate')
+        exit(1)
+    if not args.target:
+        print('Target language not set')
+        exit(1)
+    
+    print(translate(text=args.text,
+    to_lang=args.target,
+    from_lang=args.source))
+    
