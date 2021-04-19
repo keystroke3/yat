@@ -2,7 +2,7 @@
 ## About
  YAT is a quick translation app that utilizes Azur Cognative Services to perform quick translations and transliterations. It supports upto 90 langauages with transliteration support for many of them. It is written in python and uses GTK3+ for the GUI
 
- ![Yat welcome](yat-welcome.png "yat welcome")
+ ![Yat welcome](yat-welcome.png)
 
  ## Installation
  YAT is still in alpha development has quick or native installation methods yet, but you can run it for testing purposes. Bug reposts are welcome.
