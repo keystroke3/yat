@@ -62,6 +62,8 @@ def create_css():
         return ''
 
     css = ''
+    comfortaa_font="@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300&display=swap');"
+    css += comfortaa_font
     for cls_name in classes:
         class_style = f"""\n.{cls_name}{{
             font: {theme[f"{cls_name}_font"]};

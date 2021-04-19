@@ -7,7 +7,7 @@
  ## Installation
  YAT is still in alpha development has quick or native installation methods yet, but you can run it for testing purposes. Bug reposts are welcome.
 ### Authentication
-Before you can use the app, you need to be authenticated with Azure, with a key. We plan on creating a key for everyone to use so this step can be skipped, but until then you will have to create your own key. The full details on how to do so are layed out in [Microsoft Azure documentation](https://docs.microsoft.com/en-us/azure/cognitive-services/translator/translator-how-to-signup).  
+Before you can use the app, you need to be authenticated with Azure, with a key. A key can be provided upon request in special cases, but it is not a guarantee. We plan on creating a key for everyone to use so this step can be skipped, but until then you will have to create your own key. The full details on how to do so are layed out in [Microsoft Azure documentation](https://docs.microsoft.com/en-us/azure/cognitive-services/translator/translator-how-to-signup).  
 Once you obtain the key, create a file called `env.json` the `lib` folder with the following contents:
 ```json
 {
@@ -57,3 +57,4 @@ to exit out of the virtual environment.
 - Create an installer
 - Add clipboard support
 - Make imporvements on speed
+- Add settings panel
