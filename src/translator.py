@@ -2,8 +2,13 @@ import requests
 import uuid
 import json
 import argparse
+import utils 
+
+cache_dir = utils.cache_dir
+lib_dir = utils.lib_dir
+
 try:
-    with open('env.json', 'r') as f:
+    with open(f'{lib_dir}/env.json', 'r') as f:
         creds = json.load(f)
 except FileNotFoundError:
     print('No credentials found')
@@ -20,13 +25,15 @@ headers = {
 }
 
 
-def translate(text, to_lang, from_lang):
+def translate(text, to_lang, from_lang=''):
     if not text:
         return 'Nothing to translate'
-    if not to_lang: 
+    if not to_lang:
         return 'Target Language cannot be empty'
 
     if type(to_lang) == str:
+        if ', ' in to_lang:
+            to_lang = to_lang.replace(', ', ',')
         if ' ' in to_lang or ',' in to_lang:
             to_lang = [to_lang.split(i) for i in (',', ' ') if i in to_lang][0]
         else:
@@ -36,24 +43,32 @@ def translate(text, to_lang, from_lang):
         toScript = 'latn'
     else:
         toScript = ['latn' for i in to_lang[0]]
-        
+
     params = {
         'api-version': '3.0',
         'from': from_lang,
         'toScript': toScript,
         'to': to_lang
-    }   
-
+    }
     if not from_lang\
-        and ' ' not in text.strip():
+            and ' ' not in text.strip()\
+                and len(to_lang) == 1:
         from_lang = api(text, 'detect')[0]['language']
         params['from'] = from_lang
-        return from_lang, api(text, 'dict', params)
+        d_text = api(text, 'dict', params)
+        return from_lang, d_text 
     else:
-        r = api(text, 'translate', params)[0]
-        language = r['detectedLanguage']['language']
-        translations = r['translations']
-        return language, translations
+        r = api(text, 'translate', params)
+        try:
+            r=r[0]
+            from_lang = r['detectedLanguage']['language']
+            translations = r['translations']
+            return from_lang, translations
+        except KeyError:
+            print('key error')
+            print(r)
+            return 1, r
+
 
 def api(text, mode, params={}):
     if mode == 'translate' or mode == '':
@@ -78,11 +93,11 @@ def api(text, mode, params={}):
 if __name__ == '__main__':
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument("-t", "--text", metavar="'text'",
-                        help="Text to translate")
+                            help="Text to translate")
     cli_parser.add_argument("-T", "--target", metavar="'language'",
-                        help="Target language to translate to")
+                            help="Target language to translate to")
     cli_parser.add_argument("-s", "--source", default='', metavar="'language'",
-                        help="Source language of the text")
+                            help="Source language of the text")
     args = cli_parser.parse_args()
     if not args.text:
         print('Nothing to translate')
@@ -90,8 +105,7 @@ if __name__ == '__main__':
     if not args.target:
         print('Target language not set')
         exit(1)
-    
+
     print(translate(text=args.text,
-    to_lang=args.target,
-    from_lang=args.source))
-    
+                    to_lang=args.target,
+                    from_lang=args.source))

@@ -2,15 +2,15 @@ import pickle
 import json
 import dominate
 import argparse
-from translator import translate
+import utils
 from dominate.util import raw
-from dominate.tags import body, sup, ol, ul, li, link, div, p
+from dominate.tags import body, sup, ol, ul, li, link, div, p, style
 
-theme = ''
+cache_dir = utils.cache_dir
+lib_dir = utils.lib_dir
 
-with open('../lib/language_names.p', 'rb') as l:
+with open(f'{lib_dir}/language_names.p', 'rb') as l:
     langs = pickle.load(l)
-
 
 def create_theme():
     theme = {
@@ -41,14 +41,14 @@ def create_theme():
         'lit_font': '15px roboto',
     }
 
-    with open('../lib/theme.p', 'wb') as t:
+    with open(f'{lib_dir}/theme.p', 'wb') as t:
         pickle.dump(theme, t)
     return theme
 
 
 def create_css():
     try:
-        with open('../lib/theme.p', 'rb') as t:
+        with open(f'{lib_dir}/theme.p', 'rb') as t:
             theme = pickle.load(t)
     except FileNotFoundError:
         theme = create_theme()
@@ -63,7 +63,7 @@ def create_css():
 
     css = ''
     for cls_name in classes:
-        class_style = f""".{cls_name}{{
+        class_style = f"""\n.{cls_name}{{
             font: {theme[f"{cls_name}_font"]};
             background-color: {theme[f"{cls_name}_bg"]};
             color: {theme[f"{cls_name}_fg"]};
@@ -91,12 +91,13 @@ def create_css():
     """
     css += exta_css
 
-    with open('../lib/style.css', 'w') as f:
+    with open(f'{lib_dir}/style.css', 'w') as f:
         f.write(css)
+        return css
 
 
 def parse_dict(payload):
-    p=payload[0]
+    p = payload[0]
     query = p['displaySource']
     definitions = {}
     for word in p['translations']:
@@ -114,7 +115,7 @@ def parse_dict(payload):
 def dict_html(container, query, dict_, source, target):
     container.add(div(query, cls='word'))
     container.add(div(raw(
-        f'{langs[source]} -> {langs[target]}'), cls='lang'))
+        f'{langs[source]} -> {langs[target[0]]}'), cls='lang'))
     for w in dict_:
         def_box = container.add(div()).add(ul())
         defin = dict_[w]
@@ -147,15 +148,16 @@ def trans_html(container, payload, source):
 
 def parse(target='', source='', payload=''):
     try:
-        with open('../lib/style.css'):
-            pass
+        with open(f'{lib_dir}/style.css') as s:
+            styles = s.read()
     except FileNotFoundError:
-        create_css()
-        parse(target, source, payload)
+        styles = create_css()
 
     doc = dominate.document(title=f'YAT')
     with doc.head:
-        link(rel='stylesheet', href='../lib/style.css')
+        style(styles)
+        # link(rel='stylesheet', href=f'{lib_dir}/style.css')
+
     with doc:
         container = body(cls='body').add(div(cls='def_box'))
     try:
@@ -163,12 +165,13 @@ def parse(target='', source='', payload=''):
         query, dict_ = parse_dict(payload)
         dict_html(container, query, dict_, source, target)
         return doc
-    except (KeyError,KeyError):
+    except (KeyError):
         trans_html(container, payload, source)
         return doc
 
 
 if __name__ == '__main__':
+    from translator import translate
     cli_parser = argparse.ArgumentParser()
     cli_parser.add_argument("-t", "--text", metavar="'text'",
                             help="Text to translate")
@@ -184,13 +187,14 @@ if __name__ == '__main__':
         exit(1)
         print('Target language not set')
     response = translate(text=args.text,
-                        to_lang=args.target,
-                        from_lang=args.source)
+                         to_lang=args.target,
+                         from_lang=args.source)
     payload = response[1]
-    if not source:
+    if not args.source:
         source = response[0]
     else:
         source = args.source
+    # print(payload)
     print(parse(target=args.target,
                 source=source,
                 payload=payload))

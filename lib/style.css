@@ -1,10 +1,13 @@
+
 .body{
             font: 15px roboto;
             background-color: #1E1C31;
             color: #E5C07B;
             font: 15px roboto;
             overflow: scroll;
+            min-width: min-content;
             }
+
 .word{
             font: 20px comfortaa;
             background-color: #1E1C31;
@@ -12,6 +15,7 @@
             font: 20px comfortaa;
             
             }
+
 .lang{
             font: 15px comfortaa;
             background-color: #1E1C31;
@@ -19,6 +23,7 @@
             font: 15px comfortaa;
             
             }
+
 .query{
             font: 15px comfortaa;
             background-color: #1E1C31;
@@ -26,6 +31,7 @@
             font: 15px comfortaa;
             
             }
+
 .definition{
             font: 15px comfortaa;
             background-color: #1E1C31;
@@ -33,19 +39,23 @@
             font: 15px comfortaa;
             
             }
+
 .translation{
             font: 15px roboto;
             background-color: #1E1C31;
             color: #98C379;
             font: 15px roboto;
+            
             }
+
 .lit{
             font: 15px roboto;
             background-color: #1E1C31;
             color: #98C379;
             font: 15px roboto;
-            font-style: italic;
+            
             }
+
 .synonyms{
             font: 15px roboto;
             background-color: #1E1C31;
@@ -60,18 +70,18 @@
 .variant{
             display: inline;
         }
+.indent{
+            margin-left: 5%;
+        }
 .def_box{
-            border: 3px;
+            border: 0;
             border-style: dotted;
             border-radius: 10px;
             border-color: '#E5C07B';
             padding: 10px;
             margin: 5px;
-            width: 20rem;
+            width: max-content;
             height: max-content;
         }
-.indent{
-    margin-left: 5%;
-}
 
     
