@@ -9,3 +9,4 @@
 *.venv*
 *cache*
 !lib/*.css
+!yat-welcome.png
