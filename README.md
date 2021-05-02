@@ -56,5 +56,5 @@ to exit out of the virtual environment.
 - Create a launcher
 - Create an installer
 - Add clipboard support
-- Make imporvements on speed
+- Make improvemnts on speed
 - Add settings panel
